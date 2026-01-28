@@ -1,21 +1,22 @@
 import React from 'react';
 import { Player } from '../../types';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Users, Crown } from 'lucide-react';
+import { Users, Crown, UserMinus } from 'lucide-react';
 
 interface PlayerLobbyProps {
   players: Player[];
   roomCode: string;
   isHost?: boolean;
   gameStatus?: string;
+  onKickPlayer?: (playerId: string) => void;
 }
 
 export const PlayerLobby: React.FC<PlayerLobbyProps> = ({
   players,
   roomCode,
   isHost = false,
-  gameStatus = 'waiting'
+  gameStatus = 'waiting',
+  onKickPlayer
 }) => {
   return (
     <div className="space-y-6">
@@ -55,9 +56,9 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({
             {players.map((player) => (
               <div
                 key={player.id}
-                className="bg-white/10 hover:bg-white/15 rounded-lg p-3 flex items-center transition-colors"
+                className="bg-white/10 hover:bg-white/15 rounded-lg p-3 flex items-center justify-between transition-colors group"
               >
-                <div className="flex items-center flex-1 min-w-0">
+                <div className="flex items-center flex-1 min-w-0 mr-2">
                   <span className="text-white font-medium truncate">{player.nickname}</span>
                   <div className={`w-3 h-3 rounded-full ml-2 flex-shrink-0 ${
                   player.isConnected ? 'bg-green-400' : 'bg-red-400'
@@ -65,6 +66,16 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({
                     title={player.isConnected ? 'Online' : 'Offline'}
                   />
                 </div>
+
+                {isHost && onKickPlayer && (
+                  <button
+                    onClick={() => onKickPlayer(player.id)}
+                    className="text-white/40 hover:text-red-400 transition-colors p-1 rounded hover:bg-white/10 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Kick player"
+                  >
+                    <UserMinus size={18} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
