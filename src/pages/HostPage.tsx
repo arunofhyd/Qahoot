@@ -245,6 +245,22 @@ export const HostPage: React.FC = () => {
     }
   };
 
+  const handleKickPlayer = async (playerId: string) => {
+    if (!gameSession) return;
+
+    if (window.confirm('Are you sure you want to kick this player?')) {
+      try {
+        const updatedPlayers = gameSession.players.filter(p => p.id !== playerId);
+        await updateDoc(doc(db, 'gameSessions', gameSession.id), {
+          players: updatedPlayers
+        });
+      } catch (err) {
+        console.error('Error kicking player:', err);
+        setError('Failed to kick player');
+      }
+    }
+  };
+
   const generateLeaderboard = (): LeaderboardEntry[] => {
     if (!gameSession) return [];
 
@@ -353,6 +369,7 @@ export const HostPage: React.FC = () => {
               roomCode={gameSession.roomCode}
               isHost={true}
               gameStatus={gameSession.status}
+              onKickPlayer={handleKickPlayer}
             />
             
             <Card className="text-center">
