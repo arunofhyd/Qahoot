@@ -10,7 +10,7 @@ export const AuthPage: React.FC = () => {
     <Layout>
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">Welcome to Quiz Buddy</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">Welcome to Qahoot</h1>
           <p className="text-white/70 text-lg">Sign in to create and host amazing quizzes</p>
         </div>
         <div className="max-w-md mx-auto">

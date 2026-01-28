@@ -55,7 +55,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
     <Card className="w-full max-w-md mx-auto">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-white mb-2">Create Account</h2>
-        <p className="text-white/70">Join Quiz Buddy and start creating amazing quizzes</p>
+        <p className="text-white/70">Join Qahoot and start creating amazing quizzes</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
