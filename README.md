@@ -1,6 +1,6 @@
-# Quiz Buddy
+# Qahoot
 
-**Quiz Buddy** is a dynamic and interactive real-time quiz web application designed to bring the fun and engagement of popular quiz platforms like Kahoot! to your browser. Built with a focus on a modern, beautiful aesthetic and robust real-time synchronization, Quiz Buddy provides a seamless experience for both hosts and players across all devices.
+**Qahoot** is a dynamic and interactive real-time quiz web application designed to bring the fun and engagement of popular quiz platforms like Kahoot! to your browser. Built with a focus on a modern, beautiful aesthetic and robust real-time synchronization, Qahoot provides a seamless experience for both hosts and players across all devices.
 
 ## ✨ Features
 
@@ -66,7 +66,7 @@
 
 ## 🚀 Tech Stack
 
-Quiz Buddy is built with an **awesome React.js frontend** for a performant and engaging user experience, powered by a robust Firebase backend.
+Qahoot is built with an **awesome React.js frontend** for a performant and engaging user experience, powered by a robust Firebase backend.
 
 * **Frontend:**
 
@@ -88,7 +88,7 @@ Quiz Buddy is built with an **awesome React.js frontend** for a performant and e
 
 ## ⚙️ Getting Started
 
-Follow these steps to set up and run Quiz Buddy locally.
+Follow these steps to set up and run Qahoot locally.
 
 ### Prerequisites
 
@@ -117,8 +117,8 @@ Follow these steps to set up and run Quiz Buddy locally.
 1.  **Clone the repository:**
 
     ```
-    git clone [https://github.com/your-username/quiz-buddy.git](https://github.com/your-username/quiz-buddy.git)
-    cd quiz-buddy
+    git clone [https://github.com/your-username/qahoot.git](https://github.com/your-username/qahoot.git)
+    cd qahoot
     ```
 
 2.  **Install dependencies:**
@@ -130,7 +130,7 @@ Follow these steps to set up and run Quiz Buddy locally.
     ```
 
 3.  **Environment Variables:**
-    Create a `.env` file in the root of the project (`quiz-buddy/.env`) and add your Firebase configuration details:
+    Create a `.env` file in the root of the project (`qahoot/.env`) and add your Firebase configuration details:
 
     ```
     REACT_APP_FIREBASE_API_KEY=YOUR_API_KEY
@@ -163,7 +163,7 @@ This application is designed for easy deployment to Netlify.
 
     * Click "Add new site" -> "Import an existing project" -> "Deploy with GitHub".
 
-    * Select your `quiz-buddy` repository.
+    * Select your `qahoot` repository.
 
 2.  **Configure Build Settings:**
 
@@ -207,7 +207,7 @@ This application is designed for easy deployment to Netlify.
 
 ## ✅ Robustness & Error Handling
 
-Quiz Buddy is built with comprehensive error handling across all Firebase operations and user interactions. The application provides clear, user-friendly feedback instead of crashes, ensuring a stable and reliable experience. Real-time synchronization is meticulously managed to minimize latency and ensure data consistency across all connected clients.
+Qahoot is built with comprehensive error handling across all Firebase operations and user interactions. The application provides clear, user-friendly feedback instead of crashes, ensuring a stable and reliable experience. Real-time synchronization is meticulously managed to minimize latency and ensure data consistency across all connected clients.
 
 ## 🤝 Contributing
 

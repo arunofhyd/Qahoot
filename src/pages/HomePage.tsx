@@ -43,7 +43,7 @@ export const HomePage: React.FC = () => {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Gamepad2 className="text-blue-400" size={48} />
-            <h1 className="text-5xl font-bold text-white">Quiz Buddy</h1>
+            <h1 className="text-5xl font-bold text-white">Qahoot</h1>
           </div>
           <p className="text-xl text-white/70">
             Join the fun or host your own interactive quiz!
@@ -138,13 +138,13 @@ export const HomePage: React.FC = () => {
 
         {/* Features Section */}
         <div className="mt-16 text-center">
-          <h3 className="text-2xl font-bold text-white mb-8">Why Choose Quiz Buddy?</h3>
+          <h3 className="text-2xl font-bold text-white mb-8">Why Choose Qahoot?</h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             <div className="bg-white/5 rounded-xl p-6 border border-white/10">
               <CircleDollarSign className="text-yellow-400 text-3xl mb-4 mx-auto" />
               <h4 className="text-white font-semibold mb-2">Completely Free</h4>
               <p className="text-white/60 text-sm">
-                Enjoy all features without any cost. Unlike Kahoot! or Mentimeter, Quiz Buddy offers a full experience for free!
+                Enjoy all features without any cost. Unlike Kahoot! or Mentimeter, Qahoot offers a full experience for free!
               </p>
             </div>
             <div className="bg-white/5 rounded-xl p-6 border border-white/10">
@@ -181,7 +181,7 @@ export const HomePage: React.FC = () => {
               </p>
               <Button
                 variant="outline"
-                onClick={() => window.open('mailto:arunthomas04042001@gmail.com?subject=Quiz%20Buddy%20Feedback', '_blank')}
+                onClick={() => window.open('mailto:arunthomas04042001@gmail.com?subject=Qahoot%20Feedback', '_blank')}
                 className="inline-flex items-center gap-2"
               >
                 <Mail size={18} />
