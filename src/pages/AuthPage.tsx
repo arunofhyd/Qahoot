@@ -57,7 +57,7 @@ export const AuthPage: React.FC = () => {
     <div className="main-container">
         <div id="login-view" className="view-container w-full max-w-md mx-auto">
             <div className="login-container rounded-xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300">
-                 <img src="/assets/logo_rounded.webp" className="w-24 h-24 mb-4 mx-auto rounded-full object-cover logo-glow transition-all duration-300" alt="App Logo" />
+                 <img src="/assets/logo.svg" className="w-24 h-24 mb-4 mx-auto rounded-full object-cover logo-glow transition-all duration-300" alt="App Logo" />
                 <h1 className="text-4xl sm:text-5xl font-extrabold title-text tracking-tight mb-2 sm:mb-4 break-words transition-colors duration-300">Qahoot</h1>
                 <div className="flex items-center justify-center gap-2 mb-2 sm:mb-4">
                     <p className="subtitle-text text-sm sm:text-base transition-colors duration-300">Create and host interactive quizzes.</p>
