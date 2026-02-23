@@ -1,9 +1,14 @@
 
-> quiz-buddy@1.0.0 dev
+> qahoot@1.0.0 dev
 > vite
 
 
-  VITE v5.4.8  ready in 595 ms
+  VITE v5.4.8  ready in 266 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
+Browserslist: caniuse-lite is outdated. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+5:29:50 PM [vite] .env changed, restarting server...
+5:29:50 PM [vite] server restarted.

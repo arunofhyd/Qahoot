@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, updateDoc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button';
 import { PlayerLobby } from '../components/game/PlayerLobby';
 import { QuestionDisplay } from '../components/game/QuestionDisplay';
 import { Leaderboard } from '../components/game/Leaderboard';
-import { LiveMiniLeaderboard } from '../components/game/LiveMiniLeaderboard'; // Import LiveMiniLeaderboard
+import { LiveMiniLeaderboard } from '../components/game/LiveMiniLeaderboard';
 import { Quiz, GameSession, Player, LeaderboardEntry } from '../types';
 import { 
   Eye,
@@ -19,13 +19,15 @@ import {
   ArrowLeft, 
   RefreshCw, 
   Users,
-  Trophy 
+  Trophy,
+  Download
 } from 'lucide-react';
 
 export const HostPage: React.FC = () => {
   const { quizId } = useParams<{ quizId: string }>();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
@@ -37,6 +39,35 @@ export const HostPage: React.FC = () => {
       loadQuiz();
     }
   }, [quizId, currentUser]);
+
+  // Handle session resumption from dashboard
+  useEffect(() => {
+    const resumeSession = async () => {
+      const stateSessionId = location.state?.sessionId;
+      if (stateSessionId && !gameSession) {
+        try {
+          const docRef = doc(db, 'gameSessions', stateSessionId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const sessionData = {
+              ...data,
+              id: docSnap.id,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              players: data.players?.map((player: any) => ({
+                ...player,
+                joinedAt: player.joinedAt?.toDate() || new Date()
+              })) || []
+            } as GameSession;
+            setGameSession(sessionData);
+          }
+        } catch (err) {
+          console.error('Error resuming session:', err);
+        }
+      }
+    };
+    resumeSession();
+  }, [location.state]);
 
   useEffect(() => {
     if (gameSession?.id) {
@@ -116,7 +147,6 @@ export const HostPage: React.FC = () => {
       });
     } catch (err) {
       console.error('Error revealing answer:', err);
-      // Assuming setError is a state setter like: const [error, setError] = useState('');
       setError('Failed to reveal answer');
     }
   };
@@ -147,13 +177,16 @@ export const HostPage: React.FC = () => {
 
     try {
       const roomCode = generateRoomCode();
+      const mode = quiz.settings?.mode || 'live';
       
       const newGameSession: Omit<GameSession, 'id'> = {
         roomCode,
         quizId: quiz.id,
         quiz,
         hostId: currentUser.uid,
-        status: 'waiting',
+        status: mode === 'self-paced' ? 'active' : 'waiting',
+        mode,
+        enableTiming: quiz.settings?.enableTiming || false,
         currentQuestionIndex: 0,
         players: [],
         createdAt: new Date()
@@ -186,7 +219,6 @@ export const HostPage: React.FC = () => {
   };
 
   const nextQuestion = async () => {
-    // This function is now called when status is 'leaderboard'
     if (!gameSession || gameSession.status !== 'leaderboard') {
       return;
     }
@@ -220,8 +252,6 @@ export const HostPage: React.FC = () => {
         status: 'finished'
       });
     } else {
-      // If current status is answer_reveal, skip to next question directly
-      // Otherwise (i.e. 'question'), also skip to next question directly
       await updateDoc(doc(db, 'gameSessions', gameSession.id), {
         status: 'question',
         currentQuestionIndex: nextIndex,
@@ -259,6 +289,65 @@ export const HostPage: React.FC = () => {
         setError('Failed to kick player');
       }
     }
+  };
+
+  const exportResults = () => {
+    if (!gameSession) return;
+
+    const headers = [
+      'Player Name',
+      'Score',
+      'Rank',
+      ...gameSession.quiz.questions.flatMap((q, i) => [
+        `Q${i + 1} Answer`,
+        `Q${i + 1} Correct`,
+        `Q${i + 1} Points`,
+        `Q${i + 1} Time (s)`,
+        `Q${i + 1} Start`,
+        `Q${i + 1} End`
+      ])
+    ];
+
+    const leaderboard = generateLeaderboard();
+
+    const rows = gameSession.players.map(player => {
+      const rank = leaderboard.find(e => e.playerId === player.id)?.rank || '-';
+
+      const answerData = gameSession.quiz.questions.flatMap(q => {
+        const answer = player.answers.find(a => a.questionId === q.id);
+        if (!answer) return ['', '', '', '', '', ''];
+
+        return [
+          q.options[answer.selectedOption] || 'Unknown',
+          answer.isCorrect ? 'Yes' : 'No',
+          answer.points,
+          (answer.timeToAnswer / 1000).toFixed(2),
+          answer.startedAt ? new Date(answer.startedAt).toISOString() : '',
+          answer.endedAt ? new Date(answer.endedAt).toISOString() : ''
+        ];
+      });
+
+      return [
+        player.nickname,
+        player.score,
+        rank,
+        ...answerData
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `quiz_results_${gameSession.roomCode}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const generateLeaderboard = (): LeaderboardEntry[] => {
@@ -319,6 +408,7 @@ export const HostPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-white mb-2">{quiz.title}</h1>
             <p className="text-white/70">
               {gameSession ? `Room: ${gameSession.roomCode}` : 'Host Dashboard'}
+              {gameSession?.mode === 'self-paced' && <span className="ml-2 bg-blue-500/20 text-blue-200 text-xs px-2 py-1 rounded">Self-Paced</span>}
             </p>
           </div>
           
@@ -354,6 +444,7 @@ export const HostPage: React.FC = () => {
               <div className="text-sm text-white/60 mb-6">
                 {quiz.questions.length} questions • {' '}
                 {Math.round(quiz.questions.reduce((acc, q) => acc + q.timeLimit, 0) / 60)} minutes
+                {quiz.settings?.mode === 'self-paced' && ' • Self-Paced Mode'}
               </div>
             </div>
             
@@ -362,6 +453,23 @@ export const HostPage: React.FC = () => {
               Start New Game
             </Button>
           </Card>
+        ) : gameSession.status === 'active' && gameSession.mode === 'self-paced' ? (
+           <div className="space-y-6">
+             <Card className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-2">Self-Paced Quiz is Live</h2>
+                <div className="text-6xl font-mono font-bold text-blue-400 my-6 tracking-widest bg-black/20 p-4 rounded-xl inline-block">
+                  {gameSession.roomCode}
+                </div>
+                <p className="text-white/70 mb-6">Share this code with players so they can take the quiz at their own pace.</p>
+
+                <div className="flex justify-center gap-4">
+                    <Button onClick={exportResults} icon={<Download size={20} className="mr-2" />}>Export Results</Button>
+                    <Button variant="danger" onClick={endGame} icon={<Square size={20} className="mr-2" />}>End Session</Button>
+                </div>
+             </Card>
+
+             <Leaderboard entries={generateLeaderboard()} title="Current Progress" />
+          </div>
         ) : gameSession.status === 'waiting' ? (
           <div className="space-y-6">
             <PlayerLobby
@@ -411,14 +519,12 @@ export const HostPage: React.FC = () => {
                 {gameSession.status === 'answer_reveal' && (
                   <Button onClick={proceedToLeaderboard} icon={<Trophy size={20} className="mr-2" />}>Show Leaderboard</Button>
                 )}
-                {/* Common buttons for both question and answer_reveal states */}
                 <Button variant="ghost" onClick={skipQuestion} icon={<SkipForward size={20} className="mr-2" />}>
                   {gameSession.status === 'answer_reveal' ? 'Skip to Next Q' : 'Skip Question'}
                 </Button>
                 <Button variant="danger" onClick={endGame} icon={<Square size={20} className="mr-2" />}>End Game</Button>
               </div>
             </Card>
-            {/* Render LiveMiniLeaderboard during answer_reveal state for Host */}
             {gameSession.status === 'answer_reveal' && gameSession.players && gameSession.players.length > 0 && (
               <LiveMiniLeaderboard players={gameSession.players} />
             )}
@@ -460,6 +566,9 @@ export const HostPage: React.FC = () => {
                 Thanks for playing "{quiz.title}"
               </p>
               <div className="flex justify-center gap-4">
+                <Button onClick={exportResults} icon={<Download size={20} className="mr-2" />}>
+                    Export Results
+                </Button>
                 <Button onClick={startGame}>
                   <RefreshCw size={20} className="mr-2" />
                   Play Again
@@ -480,7 +589,7 @@ export const HostPage: React.FC = () => {
               <div className="flex items-center gap-2 text-white">
                 <Users size={16} />
                 <span className="font-semibold">{gameSession.players.length} player{gameSession.players.length !== 1 ? 's' : ''}</span>
-                <div className={`w-2 h-2 rounded-full ${gameSession.status === 'waiting' ? 'bg-yellow-400' : 'bg-green-400'}`} />
+                <div className={`w-2 h-2 rounded-full ${['waiting', 'active'].includes(gameSession.status) ? 'bg-yellow-400' : 'bg-green-400'}`} />
               </div>
             </Card>
           </div>

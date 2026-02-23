@@ -91,6 +91,7 @@ export const QuizEditorPage: React.FC = () => {
         title: quiz.title,
         description: quiz.description,
         questions: quiz.questions,
+        settings: quiz.settings || { mode: 'live', enableTiming: false },
         updatedAt: Timestamp.fromDate(new Date())
       });
       navigate('/dashboard'); // Navigate after successful save
@@ -272,6 +273,56 @@ export const QuizEditorPage: React.FC = () => {
                 className="w-full px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
                 rows={3}
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Quiz Mode
+                </label>
+                <select
+                  value={quiz.settings?.mode || 'live'}
+                  onChange={(e) => setQuiz({
+                    ...quiz,
+                    settings: {
+                      ...quiz.settings,
+                      mode: e.target.value as 'live' | 'self-paced',
+                      enableTiming: quiz.settings?.enableTiming || false
+                    }
+                  })}
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value="live">Live Quiz (Synchronous)</option>
+                  <option value="self-paced">Self-Paced (Asynchronous)</option>
+                </select>
+                <p className="text-xs text-white/50 mt-1">
+                  Live: Everyone plays together. Self-Paced: Players take it on their own time.
+                </p>
+              </div>
+
+              <div className="flex items-center pt-6">
+                <label className="flex items-center gap-3 cursor-pointer text-white">
+                  <input
+                    type="checkbox"
+                    checked={quiz.settings?.enableTiming || false}
+                    onChange={(e) => setQuiz({
+                      ...quiz,
+                      settings: {
+                        ...quiz.settings,
+                        mode: quiz.settings?.mode || 'live',
+                        enableTiming: e.target.checked
+                      }
+                    })}
+                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="font-medium">Record Question Timing</span>
+                    <p className="text-xs text-white/50">
+                      Track how long players take to answer each question
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
         </Card>

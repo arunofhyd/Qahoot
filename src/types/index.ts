@@ -12,6 +12,10 @@ export interface Quiz {
   title: string;
   description: string;
   questions: Question[];
+  settings?: {
+    mode: 'live' | 'self-paced';
+    enableTiming: boolean;
+  };
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +27,8 @@ export interface GameSession {
   quizId: string;
   quiz: Quiz;
   hostId: string;
+  mode?: 'live' | 'self-paced'; // Add mode
+  enableTiming?: boolean; // Add enableTiming
   status: 'waiting' | 'active' | 'question' | 'answer_reveal' | 'results' | 'leaderboard' | 'finished';
   currentQuestionIndex: number;
   questionStartTime?: number;
@@ -44,6 +50,8 @@ export interface PlayerAnswer {
   selectedOption: number;
   isCorrect: boolean;
   timeToAnswer: number; // in milliseconds
+  startedAt?: number; // Start timestamp
+  endedAt?: number; // End timestamp
   points: number;
 }
 

@@ -7,11 +7,12 @@ import { Layout } from '../components/layouts/Layout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { QuizCard } from '../components/quiz/QuizCard';
-import { Quiz } from '../types';
-import { Plus, LogOut, User } from 'lucide-react';
+import { Quiz, GameSession } from '../types';
+import { Plus, LogOut, User, Trash2, PlayCircle, Users, Clock, Eye } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [sessions, setSessions] = useState<GameSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -19,14 +20,15 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadQuizzes();
+    if (currentUser) {
+      Promise.all([loadQuizzes(), loadSessions()]).finally(() => setLoading(false));
+    }
   }, [currentUser]);
 
   const loadQuizzes = async () => {
     if (!currentUser) return;
 
     try {
-      setLoading(true);
       const q = query(
         collection(db, 'quizzes'),
         where('createdBy', '==', currentUser.uid)
@@ -48,8 +50,38 @@ export const DashboardPage: React.FC = () => {
     } catch (err) {
       console.error('Error loading quizzes:', err);
       setError('Failed to load quizzes');
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const loadSessions = async () => {
+    if (!currentUser) return;
+
+    try {
+      const q = query(
+        collection(db, 'gameSessions'),
+        where('hostId', '==', currentUser.uid)
+      );
+      const querySnapshot = await getDocs(q);
+
+      const sessionsData: GameSession[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        // Determine quiz title manually if needed, but quizId is there.
+        // We might need to fetch quiz title or store it in session.
+        // For now, let's assume session.quiz stores a snapshot of the quiz.
+        sessionsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          players: data.players || []
+        } as GameSession);
+      });
+
+      // Sort by createdAt desc
+      sessionsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setSessions(sessionsData);
+    } catch (err) {
+      console.error('Error loading sessions:', err);
     }
   };
 
@@ -88,13 +120,31 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleDeleteQuiz = async (quizId: string) => {
-    try {
-      await deleteDoc(doc(db, 'quizzes', quizId));
-      setQuizzes(prev => prev.filter(quiz => quiz.id !== quizId));
-    } catch (err) {
-      console.error('Error deleting quiz:', err);
-      setError('Failed to delete quiz');
+    if (window.confirm('Are you sure you want to delete this quiz?')) {
+      try {
+        await deleteDoc(doc(db, 'quizzes', quizId));
+        setQuizzes(prev => prev.filter(quiz => quiz.id !== quizId));
+      } catch (err) {
+        console.error('Error deleting quiz:', err);
+        setError('Failed to delete quiz');
+      }
     }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+      if (window.confirm('Are you sure you want to delete this session? Results will be lost.')) {
+          try {
+              await deleteDoc(doc(db, 'gameSessions', sessionId));
+              setSessions(prev => prev.filter(s => s.id !== sessionId));
+          } catch (err) {
+              console.error('Error deleting session:', err);
+              setError('Failed to delete session');
+          }
+      }
+  };
+
+  const handleViewSession = (session: GameSession) => {
+      navigate(`/host/${session.quizId}`, { state: { sessionId: session.id } });
   };
 
   const handleLogout = async () => {
@@ -155,8 +205,9 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Quizzes Grid */}
+        <h2 className="text-2xl font-bold text-white mb-6">Your Quizzes</h2>
         {quizzes.length === 0 ? (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12 mb-12">
             <div className="text-6xl mb-4">🎯</div>
             <h3 className="text-xl font-semibold text-white mb-2">No quizzes yet</h3>
             <p className="text-white/70 mb-6">
@@ -168,7 +219,7 @@ export const DashboardPage: React.FC = () => {
             </Button>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {quizzes.map((quiz) => (
               <QuizCard
                 key={quiz.id}
@@ -179,6 +230,67 @@ export const DashboardPage: React.FC = () => {
               />
             ))}
           </div>
+        )}
+
+        {/* Recent Sessions List */}
+        {sessions.length > 0 && (
+          <>
+            <h2 className="text-2xl font-bold text-white mb-6">Active & Recent Sessions</h2>
+            <div className="space-y-4">
+              {sessions.map((session) => (
+                <Card key={session.id} className="p-4">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-white">{session.quiz?.title || 'Unknown Quiz'}</h3>
+                        <span className="bg-blue-600/30 text-blue-200 text-xs px-2 py-1 rounded font-mono">
+                          {session.roomCode}
+                        </span>
+                        {session.mode === 'self-paced' && (
+                          <span className="bg-purple-600/30 text-purple-200 text-xs px-2 py-1 rounded">
+                            Self-Paced
+                          </span>
+                        )}
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          session.status === 'finished' ? 'bg-gray-700 text-gray-300' : 'bg-green-600/30 text-green-200'
+                        }`}>
+                          {session.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-white/60">
+                        <div className="flex items-center gap-1">
+                          <Clock size={14} />
+                          <span>{session.createdAt.toLocaleDateString()} {session.createdAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users size={14} />
+                          <span>{session.players?.length || 0} players</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <Button
+                        onClick={() => handleViewSession(session)}
+                        variant="secondary"
+                        className="flex-1 md:flex-none"
+                      >
+                         <Eye size={16} className="mr-2" />
+                         View
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteSession(session.id)}
+                        variant="ghost"
+                        className="text-red-400 hover:text-red-300 px-3"
+                      >
+                         <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </Layout>

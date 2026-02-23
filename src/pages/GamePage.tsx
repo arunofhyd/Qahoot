@@ -7,17 +7,25 @@ import { Button } from '../components/ui/Button';
 import { PlayerLobby } from '../components/game/PlayerLobby';
 import { QuestionDisplay } from '../components/game/QuestionDisplay';
 import { Leaderboard } from '../components/game/Leaderboard';
-import { LiveMiniLeaderboard } from '../components/game/LiveMiniLeaderboard'; // Import LiveMiniLeaderboard
+import { LiveMiniLeaderboard } from '../components/game/LiveMiniLeaderboard';
 import { LeaderboardEntry } from '../types';
-import { ArrowLeft, Trophy } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export const GamePage: React.FC = () => {
   const { gameSession, currentPlayer, submitAnswer, leaveGame, error } = useGame();
   const navigate = useNavigate();
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
 
-  const prevStatusRef = useRef<GameSession['status']>();
+  const prevStatusRef = useRef<string>();
+  const prevQuestionIndexRef = useRef<number>(-1);
+
+  // Determine current question index based on mode
+  const isSelfPaced = gameSession?.mode === 'self-paced';
+  const currentQuestionIndex = isSelfPaced
+    ? (currentPlayer?.answers.length || 0)
+    : (gameSession?.currentQuestionIndex || 0);
 
   useEffect(() => {
     if (gameSession) {
@@ -31,30 +39,34 @@ export const GamePage: React.FC = () => {
     }
   }, [gameSession, currentPlayer, navigate]);
 
+  // Reset answer state when question changes
   useEffect(() => {
-    // Reset answer state when a new question starts
-    if (gameSession?.status === 'question') {
-      setSelectedAnswer(null);
-      setHasAnswered(false);
+    if (currentQuestionIndex !== prevQuestionIndexRef.current) {
+        setSelectedAnswer(null);
+        setHasAnswered(false);
+        setQuestionStartTime(Date.now());
+        prevQuestionIndexRef.current = currentQuestionIndex;
     }
-  }, [gameSession?.currentQuestionIndex, gameSession?.status]);
+  }, [currentQuestionIndex]);
 
-  // New useEffect for automatic timeout submission
+  // Auto-timeout for Live Mode
   useEffect(() => {
+    if (isSelfPaced) return; // No auto-timeout for self-paced in this logic (handled by client or ignored)
+
     if (
       gameSession &&
       currentPlayer &&
-      prevStatusRef.current === 'question' && // Check previous status
-      gameSession.status === 'answer_reveal' && // Check current status
+      prevStatusRef.current === 'question' &&
+      gameSession.status === 'answer_reveal' &&
       gameSession.quiz &&
       gameSession.quiz.questions &&
-      gameSession.currentQuestionIndex >= 0 && // Ensure index is non-negative
+      gameSession.currentQuestionIndex >= 0 &&
       gameSession.currentQuestionIndex < gameSession.quiz.questions.length &&
-      !hasAnswered // Check if player hasn't already answered
+      !hasAnswered
     ) {
-      console.log(`Player ${currentPlayer.id} timed out for question index ${gameSession.currentQuestionIndex}. Submitting -1.`);
+      console.log(`Player ${currentPlayer.id} timed out. Submitting -1.`);
       submitAnswer(-1);
-      setHasAnswered(true); // Mark as answered to prevent re-submission
+      setHasAnswered(true);
     }
   }, [
     gameSession?.status,
@@ -62,19 +74,33 @@ export const GamePage: React.FC = () => {
     currentPlayer,
     hasAnswered,
     submitAnswer,
-    gameSession // Include gameSession due to access to gameSession.quiz.questions
+    gameSession,
+    isSelfPaced
   ]);
 
   const handleAnswerSelect = useCallback(async (selectedOption: number) => {
-    if (hasAnswered || !gameSession || gameSession.status !== 'question') return;
+    if (hasAnswered || !gameSession) return;
 
-    setHasAnswered(true); // Set immediately to prevent re-submission
+    if (isSelfPaced) {
+        if (gameSession.status !== 'active') return;
+    } else {
+        if (gameSession.status !== 'question') return;
+    }
 
-    // Since onAnswerSelect(-1) is no longer called by QuestionDisplay's timer,
-    // selectedOption will always be a user-chosen option index.
-    setSelectedAnswer(selectedOption); // Keep track of what user selected locally
-    await submitAnswer(selectedOption); // Submit the actual selected option
-  }, [hasAnswered, gameSession, submitAnswer]);
+    setHasAnswered(true);
+    setSelectedAnswer(selectedOption); // Keep track locally
+
+    const endedAt = Date.now();
+    await submitAnswer(selectedOption, questionStartTime, endedAt);
+
+    if (isSelfPaced) {
+        // For self-paced, maybe show a "Next" button or just delay?
+        // Current implementation of QuestionDisplay doesn't have a "Next" button.
+        // We will just let the state update (currentPlayer.answers changes -> currentQuestionIndex changes -> re-render new question)
+        // But we need to wait for the submitAnswer to complete and update context.
+    }
+
+  }, [hasAnswered, gameSession, submitAnswer, isSelfPaced, questionStartTime]);
 
   const handleLeaveGame = () => {
     if (window.confirm('Are you sure you want to leave the game?')) {
@@ -114,6 +140,152 @@ export const GamePage: React.FC = () => {
     );
   }
 
+  // Render logic helper
+  const renderContent = () => {
+    // 1. Waiting Room
+    if (gameSession.status === 'waiting') {
+       return (
+          <PlayerLobby
+            players={gameSession.players}
+            roomCode={gameSession.roomCode}
+            isHost={false}
+          />
+       );
+    }
+
+    // 2. Self-Paced Mode Logic
+    if (isSelfPaced && gameSession.status === 'active') {
+       const totalQuestions = gameSession.quiz.questions.length;
+       if (currentQuestionIndex >= totalQuestions) {
+          // Finished
+          return renderFinishedScreen();
+       } else {
+          // Playing
+          const question = gameSession.quiz.questions[currentQuestionIndex];
+          return (
+             <div className="space-y-6">
+                <QuestionDisplay
+                    key={question.id}
+                    question={question}
+                    questionNumber={currentQuestionIndex + 1}
+                    totalQuestions={totalQuestions}
+                    timeLimit={question.timeLimit}
+                    onAnswerSelect={handleAnswerSelect}
+                    selectedAnswer={selectedAnswer || undefined}
+                    showResults={false}
+                    isHost={false}
+                    playerHasAnswered={hasAnswered}
+                />
+                {hasAnswered && (
+                  <Card className="text-center">
+                    <div className="text-white/70 mb-2">Answer submitted!</div>
+                    <div className="text-sm text-white/60">Loading next question...</div>
+                  </Card>
+                )}
+             </div>
+          );
+       }
+    }
+
+    // 3. Live Mode Logic
+    if (gameSession.status === 'question' || gameSession.status === 'answer_reveal') {
+        return (
+          <div className="space-y-6">
+            <QuestionDisplay
+              key={gameSession.quiz.questions[gameSession.currentQuestionIndex].id}
+              question={gameSession.quiz.questions[gameSession.currentQuestionIndex]}
+              questionNumber={gameSession.currentQuestionIndex + 1}
+              totalQuestions={gameSession.quiz.questions.length}
+              timeLimit={gameSession.quiz.questions[gameSession.currentQuestionIndex].timeLimit}
+              onAnswerSelect={handleAnswerSelect}
+              selectedAnswer={selectedAnswer || undefined}
+              showResults={gameSession.status === 'answer_reveal'}
+              isHost={false}
+              playerHasAnswered={hasAnswered}
+            />
+            {gameSession.status === 'question' && hasAnswered && (
+              <Card className="text-center">
+                <div className="text-white/70 mb-2">Answer submitted!</div>
+                <div className="text-sm text-white/60">
+                  Waiting for other players...
+                </div>
+              </Card>
+            )}
+            {gameSession.status === 'answer_reveal' && (
+              <Card className="text-center">
+                <div className="text-white/70 mb-2">The results are in!</div>
+                <div className="text-sm text-white/60">
+                  Waiting for the host to continue to the leaderboard...
+                </div>
+              </Card>
+            )}
+            {gameSession.status === 'answer_reveal' && gameSession.players && gameSession.players.length > 0 && (
+              <LiveMiniLeaderboard players={gameSession.players} />
+            )}
+          </div>
+        );
+    }
+
+    if (gameSession.status === 'leaderboard') {
+         return (
+          <div className="space-y-6">
+            <Leaderboard
+              entries={generateLeaderboard()}
+              title={`Question ${gameSession.currentQuestionIndex + 1} Results`}
+              showLastQuestionPoints={true}
+            />
+            <Card className="text-center">
+              <div className="text-white/70">
+                Waiting for the next question...
+              </div>
+            </Card>
+          </div>
+        );
+    }
+
+    if (gameSession.status === 'finished') {
+        return renderFinishedScreen();
+    }
+
+    return null;
+  };
+
+  const renderFinishedScreen = () => (
+      <div className="space-y-6">
+        <Leaderboard
+          entries={generateLeaderboard()}
+          title="Final Results 🏆"
+        />
+
+        <Card className="text-center">
+          <h3 className="text-2xl font-bold text-white mb-4">Game Complete!</h3>
+          <p className="text-white/70 mb-6">
+            Thanks for playing "{gameSession.quiz.title}"!
+          </p>
+
+          {(() => {
+            const leaderboard = generateLeaderboard();
+            const playerEntry = leaderboard.find(entry => entry.playerId === currentPlayer?.id);
+            if (playerEntry) {
+              return (
+                <div className="bg-blue-600/20 rounded-lg p-4 mb-6">
+                  <div className="text-white font-semibold">Your Final Position</div>
+                  <div className="text-2xl font-bold text-white">
+                    #{playerEntry.rank} • {playerEntry.score.toLocaleString()} points
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          <Button onClick={() => navigate('/')} icon={<ArrowLeft size={20} />}>
+            Back to Home
+          </Button>
+        </Card>
+      </div>
+  );
+
   return (
     <Layout background="game">
       <div className="container mx-auto px-4 py-8">
@@ -127,7 +299,7 @@ export const GamePage: React.FC = () => {
               Playing as: <span className="font-semibold text-white">{currentPlayer.nickname}</span> • Room: <span className="font-mono text-blue-400">{gameSession.roomCode}</span>
             </p>
           </div>
-          
+
           <Button variant="ghost" onClick={handleLeaveGame} icon={<ArrowLeft size={20} />}>
             Leave Game
           </Button>
@@ -146,100 +318,8 @@ export const GamePage: React.FC = () => {
           </Card>
         )}
 
-        {/* Game Content */}
-        {gameSession.status === 'waiting' ? (
-          <PlayerLobby
-            players={gameSession.players}
-            roomCode={gameSession.roomCode}
-            isHost={false}
-          />
-        ) : gameSession.status === 'question' || gameSession.status === 'answer_reveal' ? (
-          <div className="space-y-6">
-            <QuestionDisplay
-              key={gameSession.quiz.questions[gameSession.currentQuestionIndex].id} // Keep existing key
-              question={gameSession.quiz.questions[gameSession.currentQuestionIndex]}
-              questionNumber={gameSession.currentQuestionIndex + 1}
-              totalQuestions={gameSession.quiz.questions.length}
-              timeLimit={gameSession.quiz.questions[gameSession.currentQuestionIndex].timeLimit}
-              onAnswerSelect={handleAnswerSelect}
-              selectedAnswer={selectedAnswer || undefined}
-              showResults={gameSession.status === 'answer_reveal'} // Key change here
-              isHost={false}
-              playerHasAnswered={hasAnswered}
-            />
-            {/* Message when player has answered during 'question' state */}
-            {gameSession.status === 'question' && hasAnswered && (
-              <Card className="text-center">
-                <div className="text-white/70 mb-2">Answer submitted!</div>
-                <div className="text-sm text-white/60">
-                  Waiting for other players...
-                </div>
-              </Card>
-            )}
-            {/* Message when answers are revealed */}
-            {gameSession.status === 'answer_reveal' && (
-              <Card className="text-center">
-                <div className="text-white/70 mb-2">The results are in!</div>
-                <div className="text-sm text-white/60">
-                  Waiting for the host to continue to the leaderboard...
-                </div>
-              </Card>
-            )}
-            {/* Render LiveMiniLeaderboard during answer_reveal state */}
-            {gameSession.status === 'answer_reveal' && gameSession.players && gameSession.players.length > 0 && (
-              <LiveMiniLeaderboard players={gameSession.players} />
-            )}
-          </div>
-        ) : gameSession.status === 'leaderboard' ? (
-          <div className="space-y-6">
-            <Leaderboard
-              entries={generateLeaderboard()}
-              title={`Question ${gameSession.currentQuestionIndex + 1} Results`}
-              showLastQuestionPoints={true}
-            />
-            
-            <Card className="text-center">
-              <div className="text-white/70">
-                Waiting for the next question...
-              </div>
-            </Card>
-          </div>
-        ) : gameSession.status === 'finished' ? (
-          <div className="space-y-6">
-            <Leaderboard
-              entries={generateLeaderboard()}
-              title="Final Results 🏆"
-            />
-            
-            <Card className="text-center">
-              <h3 className="text-2xl font-bold text-white mb-4">Game Complete!</h3>
-              <p className="text-white/70 mb-6">
-                Thanks for playing "{gameSession.quiz.title}"!
-              </p>
-              
-              {/* Player's final position */}
-              {(() => {
-                const leaderboard = generateLeaderboard();
-                const playerEntry = leaderboard.find(entry => entry.playerId === currentPlayer.id);
-                if (playerEntry) {
-                  return (
-                    <div className="bg-blue-600/20 rounded-lg p-4 mb-6">
-                      <div className="text-white font-semibold">Your Final Position</div>
-                      <div className="text-2xl font-bold text-white">
-                        #{playerEntry.rank} • {playerEntry.score.toLocaleString()} points
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              
-              <Button onClick={() => navigate('/')} icon={<ArrowLeft size={20} />}>
-                Back to Home
-              </Button>
-            </Card>
-          </div>
-        ) : null}
+        {renderContent()}
+
       </div>
     </Layout>
   );

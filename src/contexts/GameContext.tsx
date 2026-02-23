@@ -9,7 +9,7 @@ interface GameContextType {
   loading: boolean;
   error: string | null;
   joinGame: (roomCode: string, nickname: string) => Promise<void>;
-  submitAnswer: (selectedOption: number) => Promise<void>;
+  submitAnswer: (selectedOption: number, startedAt?: number, endedAt?: number) => Promise<void>;
   leaveGame: () => void;
 }
 
@@ -42,7 +42,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       const q = query(
         collection(db, 'gameSessions'),
         where('roomCode', '==', roomCode.toUpperCase()),
-        where('status', 'in', ['waiting', 'question', 'leaderboard'])
+        where('status', 'in', ['waiting', 'question', 'leaderboard', 'active'])
       );
       
       const querySnapshot = await getDocs(q);
@@ -113,18 +113,34 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   };
 
-  const submitAnswer = async (selectedOption: number): Promise<void> => {
-    if (!gameSession || !currentPlayer || gameSession.status !== 'question') {
+  const submitAnswer = async (selectedOption: number, startedAt?: number, endedAt?: number): Promise<void> => {
+    if (!gameSession || !currentPlayer) {
       return;
     }
 
+    const isSelfPaced = gameSession.mode === 'self-paced';
+
+    if (isSelfPaced) {
+       if (gameSession.status !== 'active') return;
+    } else {
+       if (gameSession.status !== 'question') return;
+    }
+
     try {
-      const currentQuestion = gameSession.quiz.questions[gameSession.currentQuestionIndex];
+      const currentQuestionIndex = isSelfPaced
+        ? currentPlayer.answers.length
+        : gameSession.currentQuestionIndex;
+
+      const currentQuestion = gameSession.quiz.questions[currentQuestionIndex];
       // Handle timeout case: if selectedOption is -1, it's incorrect.
       const isCorrect = selectedOption !== -1 && selectedOption === currentQuestion.correctAnswer;
-      const timeToAnswer = gameSession.questionStartTime 
-        ? Date.now() - gameSession.questionStartTime 
-        : 0;
+
+      let timeToAnswer = 0;
+      if (isSelfPaced && startedAt && endedAt) {
+          timeToAnswer = endedAt - startedAt;
+      } else if (gameSession.questionStartTime) {
+          timeToAnswer = Date.now() - gameSession.questionStartTime;
+      }
       
       // Calculate points based on correctness and speed
       let points = 0;
@@ -138,7 +154,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         selectedOption,
         isCorrect,
         timeToAnswer,
-        points
+        points,
+        startedAt,
+        endedAt
       };
 
       // Update local player state

@@ -4,7 +4,9 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { User } from '../types';
@@ -15,6 +17,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  googleSignIn: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,12 +40,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Don't set user here - let onAuthStateChanged handle it
-      // console.log('Login successful:', userCredential.user.email);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error('Login error:', error);
-      // Provide more specific error messages
       if (error.code === 'auth/user-not-found') {
         throw new Error('No account found with this email address');
       } else if (error.code === 'auth/wrong-password') {
@@ -59,12 +59,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string): Promise<void> => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Don't set user here - let onAuthStateChanged handle it
-      // console.log('Registration successful:', userCredential.user.email);
+      await createUserWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error('Registration error:', error);
-      // Provide more specific error messages
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('An account with this email already exists');
       } else if (error.code === 'auth/weak-password') {
@@ -74,6 +71,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error(error.message || 'Failed to create account');
       }
+    }
+  };
+
+  const googleSignIn = async (): Promise<void> => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error('Google Sign In error:', error);
+      throw new Error(error.message || 'Failed to sign in with Google');
     }
   };
 
@@ -89,8 +96,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      // console.log('Auth state changed:', firebaseUser?.email || 'No user');
-      
       if (firebaseUser) {
         const user: User = {
           uid: firebaseUser.uid,
@@ -112,7 +117,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     login,
     register,
-    logout
+    logout,
+    googleSignIn
   };
 
   return (
