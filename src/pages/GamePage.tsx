@@ -175,6 +175,7 @@ export const GamePage: React.FC = () => {
                     showResults={false}
                     isHost={false}
                     playerHasAnswered={hasAnswered}
+                    enableTiming={gameSession.enableTiming}
                 />
                 {hasAnswered && (
                   <Card className="text-center">
@@ -202,6 +203,7 @@ export const GamePage: React.FC = () => {
               showResults={gameSession.status === 'answer_reveal'}
               isHost={false}
               playerHasAnswered={hasAnswered}
+              enableTiming={gameSession.enableTiming}
             />
             {gameSession.status === 'question' && hasAnswered && (
               <Card className="text-center">

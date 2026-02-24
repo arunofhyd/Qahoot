@@ -172,12 +172,8 @@ export const QuizEditorPage: React.FC = () => {
         setModalError('Answer options cannot be empty.');
         return;
       }
-    } else {
-      if (!textAnswer.trim()) {
-        setModalError('Correct answer cannot be empty.');
-        return;
-      }
     }
+    // For text questions, we allow empty answers (Survey Mode)
 
     let actualTimeLimit: number;
     if (timeLimit === 'other') {
@@ -489,7 +485,7 @@ export const QuizEditorPage: React.FC = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-white/50 mt-1">
-                  Players must type this answer exactly (case insensitive).
+                  Players must type this answer exactly (case insensitive). Leave empty for survey/no grading.
                 </p>
               </div>
             )}

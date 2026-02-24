@@ -519,6 +519,7 @@ export const HostPage: React.FC = () => {
               timeLimit={gameSession.quiz.questions[gameSession.currentQuestionIndex].timeLimit}
               showResults={gameSession.status === 'answer_reveal'}
               isHost={true}
+              enableTiming={gameSession.enableTiming}
             />
             <Card>
               <div className="flex flex-wrap justify-center gap-4">

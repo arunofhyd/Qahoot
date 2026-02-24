@@ -14,6 +14,7 @@ interface QuestionDisplayProps {
   showResults?: boolean;
   isHost?: boolean;
   playerHasAnswered?: boolean;
+  enableTiming?: boolean;
 }
 
 export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
@@ -25,12 +26,15 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   selectedAnswer,
   showResults = false,
   isHost = false,
-  playerHasAnswered = false
+  playerHasAnswered = false,
+  enableTiming = true
 }) => {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [textInput, setTextInput] = useState('');
 
   useEffect(() => {
+    if (!enableTiming) return;
+
     setTimeLeft(timeLimit);
     setTextInput(''); // Reset text input when question changes
     
@@ -46,31 +50,44 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLimit, question.id]); // Removed selectedAnswer
+  }, [timeLimit, question.id, enableTiming]); // Removed selectedAnswer
+
+  // Auto-submit when time runs out (Critical for self-paced mode)
+  useEffect(() => {
+    if (timeLeft === 0 && !playerHasAnswered && !showResults && !isHost && onAnswerSelect && enableTiming) {
+      if (question.type === 'text') {
+        onAnswerSelect(textInput.trim());
+      } else {
+        onAnswerSelect(-1);
+      }
+    }
+  }, [timeLeft, playerHasAnswered, showResults, isHost, onAnswerSelect, enableTiming, question.type, textInput]);
 
   const progressPercentage = (timeLeft / timeLimit) * 100;
 
   return (
     <div className="space-y-6">
       {/* Timer and Progress */}
-      <Card className="text-center">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="flex items-center gap-2 text-white/70">
-            <Clock size={20} />
-            <span className="text-lg font-medium">{timeLeft}s</span>
+      {enableTiming && (
+        <Card className="text-center">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="flex items-center gap-2 text-white/70">
+              <Clock size={20} />
+              <span className="text-lg font-medium">{timeLeft}s</span>
+            </div>
+            <div className="text-white/70">
+              Question {questionNumber} of {totalQuestions}
+            </div>
           </div>
-          <div className="text-white/70">
-            Question {questionNumber} of {totalQuestions}
+
+          <div className="w-full bg-white/20 rounded-full h-3 mb-4">
+            <div
+              className="bg-blue-500 h-3 rounded-full transition-all duration-1000 ease-linear"
+              style={{ width: `${progressPercentage}%` }}
+            />
           </div>
-        </div>
-        
-        <div className="w-full bg-white/20 rounded-full h-3 mb-4">
-          <div
-            className="bg-blue-500 h-3 rounded-full transition-all duration-1000 ease-linear"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Question */}
       <Card>

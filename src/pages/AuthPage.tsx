@@ -62,7 +62,7 @@ export const AuthPage: React.FC = () => {
         </div>
 
         <div id="login-view" className="view-container w-full max-w-md mx-auto relative z-10">
-            <div className="login-container rounded-xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300 bg-gray-900/80 backdrop-blur-md border border-blue-500/30">
+            <div className="auth-card rounded-xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300 bg-white/10 backdrop-blur-md border border-white/20">
                  <img src="/assets/logo.svg" className="w-24 h-24 mb-4 mx-auto rounded-full object-cover logo-glow transition-all duration-300" alt="App Logo" />
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-2 sm:mb-4 break-words transition-colors duration-300">Qahoot</h1>
                 <div className="flex items-center justify-center gap-2 mb-2 sm:mb-4">
@@ -115,7 +115,7 @@ export const AuthPage: React.FC = () => {
                     <button
                       onClick={handleEmailSignUp}
                       disabled={loading}
-                      className="w-full signup-btn py-2 sm:py-3 rounded-full text-sm sm:text-base font-semibold flex items-center justify-center transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-white/10 text-white hover:bg-white/20 border border-white/20 py-2 sm:py-3 rounded-full text-sm sm:text-base font-semibold flex items-center justify-center transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? '...' : 'Sign Up'}
                     </button>

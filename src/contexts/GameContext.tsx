@@ -140,8 +140,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       if (currentQuestion.type === 'text') {
         // Text answer validation
         textAnswer = String(answer).trim();
-        const correctAnswer = String(currentQuestion.correctAnswer).trim();
-        isCorrect = textAnswer.toLowerCase() === correctAnswer.toLowerCase();
+        const correctAnswer = String(currentQuestion.correctAnswer || "").trim();
+
+        // If no correct answer is set, treat it as a survey (always "correct" or just valid response)
+        if (correctAnswer === "") {
+            isCorrect = true;
+        } else {
+            isCorrect = textAnswer.toLowerCase() === correctAnswer.toLowerCase();
+        }
       } else {
         // MCQ validation (default)
         selectedOption = Number(answer);
