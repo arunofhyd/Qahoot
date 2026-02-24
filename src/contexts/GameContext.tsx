@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { doc, onSnapshot, updateDoc, arrayUnion, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, Timestamp, collection, query, where, getDocs, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { GameSession, Player, PlayerAnswer } from '../types';
 
@@ -127,80 +127,91 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
 
     try {
-      const currentQuestionIndex = isSelfPaced
-        ? currentPlayer.answers.length
-        : gameSession.currentQuestionIndex;
-
-      const currentQuestion = gameSession.quiz.questions[currentQuestionIndex];
-
-      let isCorrect = false;
-      let selectedOption: number | undefined;
-      let textAnswer: string | undefined;
-
-      if (currentQuestion.type === 'text') {
-        // Text answer validation
-        textAnswer = String(answer).trim();
-        const correctAnswer = String(currentQuestion.correctAnswer || "").trim();
-
-        // If no correct answer is set, treat it as a survey (always "correct" or just valid response)
-        if (correctAnswer === "") {
-            isCorrect = true;
-        } else {
-            isCorrect = textAnswer.toLowerCase() === correctAnswer.toLowerCase();
-        }
-      } else {
-        // MCQ validation (default)
-        selectedOption = Number(answer);
-        // Handle timeout case: if answer is -1, it's incorrect.
-        isCorrect = selectedOption !== -1 && selectedOption === Number(currentQuestion.correctAnswer);
-      }
-
-      let timeToAnswer = 0;
-      if (isSelfPaced && startedAt && endedAt) {
-          timeToAnswer = endedAt - startedAt;
-      } else if (gameSession.questionStartTime) {
-          timeToAnswer = Date.now() - gameSession.questionStartTime;
-      }
-      
-      // Calculate points based on correctness and speed
-      let points = 0;
-      if (isCorrect) {
-        // const timeBonus = Math.max(0, currentQuestion.timeLimit * 1000 - timeToAnswer); // Time bonus logic removed for now
-        points = currentQuestion.points; // Use points defined for the question
-      }
-
-      const playerAnswer: PlayerAnswer = {
-        questionId: currentQuestion.id,
-        selectedOption, // Will be undefined for text questions
-        textAnswer, // Will be undefined for MCQ questions
-        isCorrect,
-        timeToAnswer,
-        points,
-        startedAt,
-        endedAt
-      };
-
-      // Update local player state
-      const updatedPlayer = {
-        ...currentPlayer,
-        score: currentPlayer.score + points,
-        answers: [...currentPlayer.answers, playerAnswer]
-      };
-      setCurrentPlayer(updatedPlayer);
-
-      // Update Firestore - find and update the specific player
       const sessionRef = doc(db, 'gameSessions', gameSession.id);
-      const updatedPlayers = gameSession.players.map(player => 
-        player.id === currentPlayer.id ? {
-          ...updatedPlayer,
-          joinedAt: Timestamp.fromDate(updatedPlayer.joinedAt)
-        } : {
-          ...player,
-          joinedAt: Timestamp.fromDate(player.joinedAt)
+
+      await runTransaction(db, async (transaction) => {
+        const sessionDoc = await transaction.get(sessionRef);
+        if (!sessionDoc.exists()) {
+          throw new Error("Session does not exist.");
         }
-      );
+
+        const sessionData = sessionDoc.data();
+        const players = sessionData.players || [];
+        const playerIndex = players.findIndex((p: any) => p.id === currentPlayer.id);
+
+        if (playerIndex === -1) {
+            throw new Error("Player not found in session.");
+        }
+
+        const playerFromDb = players[playerIndex];
+
+        const currentQuestionIndex = isSelfPaced
+            ? playerFromDb.answers.length
+            : sessionData.currentQuestionIndex;
+
+        // Ensure questions exist
+        if (!sessionData.quiz || !sessionData.quiz.questions || !sessionData.quiz.questions[currentQuestionIndex]) {
+             // Maybe game finished or error
+             return;
+        }
+
+        const currentQuestion = sessionData.quiz.questions[currentQuestionIndex];
       
-      await updateDoc(sessionRef, { players: updatedPlayers });
+        let isCorrect = false;
+        let selectedOption: number | undefined;
+        let textAnswer: string | undefined;
+
+        if (currentQuestion.type === 'text') {
+            textAnswer = String(answer).trim();
+            const correctAnswer = String(currentQuestion.correctAnswer || "").trim();
+
+            if (correctAnswer === "") {
+                isCorrect = true;
+            } else {
+                isCorrect = textAnswer.toLowerCase() === correctAnswer.toLowerCase();
+            }
+        } else {
+            selectedOption = Number(answer);
+            isCorrect = selectedOption !== -1 && selectedOption === Number(currentQuestion.correctAnswer);
+        }
+
+        let timeToAnswer = 0;
+        if (isSelfPaced && startedAt && endedAt) {
+            timeToAnswer = endedAt - startedAt;
+        } else if (sessionData.questionStartTime) {
+            timeToAnswer = Date.now() - sessionData.questionStartTime;
+        }
+
+        // Ensure timeToAnswer is not negative
+        if (timeToAnswer < 0) timeToAnswer = 0;
+
+        let points = 0;
+        if (isCorrect) {
+            points = currentQuestion.points;
+        }
+
+        const playerAnswer: PlayerAnswer = {
+            questionId: currentQuestion.id,
+            selectedOption,
+            textAnswer,
+            isCorrect,
+            timeToAnswer,
+            points,
+            startedAt,
+            endedAt
+        };
+
+        const updatedPlayer = {
+            ...playerFromDb,
+            score: playerFromDb.score + points,
+            answers: [...playerFromDb.answers, playerAnswer]
+        };
+
+        const updatedPlayers = [...players];
+        updatedPlayers[playerIndex] = updatedPlayer;
+
+        transaction.update(sessionRef, { players: updatedPlayers });
+      });
 
     } catch (err) {
       console.error('Error submitting answer:', err);

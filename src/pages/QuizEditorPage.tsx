@@ -195,11 +195,14 @@ export const QuizEditorPage: React.FC = () => {
       id: editingQuestion?.id || `q_${Date.now()}`,
       text: questionText.trim(),
       type: questionType,
-      options: questionType === 'mcq' ? options.map(opt => opt.trim()) : undefined,
       correctAnswer: questionType === 'mcq' ? correctAnswer : textAnswer.trim(),
       timeLimit: actualTimeLimit,
       points,
     };
+
+    if (questionType === 'mcq') {
+      questionData.options = options.map(opt => opt.trim());
+    }
 
     let updatedQuestions: Question[];
     if (editingQuestion) {
