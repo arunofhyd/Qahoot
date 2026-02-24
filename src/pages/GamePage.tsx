@@ -14,7 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 export const GamePage: React.FC = () => {
   const { gameSession, currentPlayer, submitAnswer, leaveGame, error } = useGame();
   const navigate = useNavigate();
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
 
@@ -78,7 +78,7 @@ export const GamePage: React.FC = () => {
     isSelfPaced
   ]);
 
-  const handleAnswerSelect = useCallback(async (selectedOption: number) => {
+  const handleAnswerSelect = useCallback(async (answer: number | string) => {
     if (hasAnswered || !gameSession) return;
 
     if (isSelfPaced) {
@@ -88,10 +88,10 @@ export const GamePage: React.FC = () => {
     }
 
     setHasAnswered(true);
-    setSelectedAnswer(selectedOption); // Keep track locally
+    setSelectedAnswer(answer); // Keep track locally
 
     const endedAt = Date.now();
-    await submitAnswer(selectedOption, questionStartTime, endedAt);
+    await submitAnswer(answer, questionStartTime, endedAt);
 
     if (isSelfPaced) {
         // For self-paced, maybe show a "Next" button or just delay?

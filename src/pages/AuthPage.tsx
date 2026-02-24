@@ -62,7 +62,7 @@ export const AuthPage: React.FC = () => {
         </div>
 
         <div id="login-view" className="view-container w-full max-w-md mx-auto relative z-10">
-            <div className="login-container rounded-xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300 bg-white/10 backdrop-blur-md border border-white/20">
+            <div className="login-container rounded-xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300 bg-gray-900/80 backdrop-blur-md border border-blue-500/30">
                  <img src="/assets/logo.svg" className="w-24 h-24 mb-4 mx-auto rounded-full object-cover logo-glow transition-all duration-300" alt="App Logo" />
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-2 sm:mb-4 break-words transition-colors duration-300">Qahoot</h1>
                 <div className="flex items-center justify-center gap-2 mb-2 sm:mb-4">
@@ -81,7 +81,7 @@ export const AuthPage: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Email"
-                      className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white/10 border border-white/20 text-white rounded-full shadow-inner focus:ring-2 focus:ring-blue-500 placeholder-white/50 transition-all duration-300 outline-none"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-gray-800/50 border border-gray-700 text-white rounded-full shadow-inner focus:ring-2 focus:ring-blue-500 placeholder-gray-400 transition-all duration-300 outline-none hover:bg-gray-800/80"
                     />
                     <div className="relative">
                         <input
@@ -89,7 +89,7 @@ export const AuthPage: React.FC = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Password"
-                          className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white/10 border border-white/20 text-white rounded-full shadow-inner focus:ring-2 focus:ring-blue-500 placeholder-white/50 transition-all duration-300 outline-none"
+                          className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-gray-800/50 border border-gray-700 text-white rounded-full shadow-inner focus:ring-2 focus:ring-blue-500 placeholder-gray-400 transition-all duration-300 outline-none hover:bg-gray-800/80"
                         />
                         <button
                           type="button"

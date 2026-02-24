@@ -9,7 +9,7 @@ interface GameContextType {
   loading: boolean;
   error: string | null;
   joinGame: (roomCode: string, nickname: string) => Promise<void>;
-  submitAnswer: (selectedOption: number, startedAt?: number, endedAt?: number) => Promise<void>;
+  submitAnswer: (answer: number | string, startedAt?: number, endedAt?: number) => Promise<void>;
   leaveGame: () => void;
 }
 
@@ -113,7 +113,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   };
 
-  const submitAnswer = async (selectedOption: number, startedAt?: number, endedAt?: number): Promise<void> => {
+  const submitAnswer = async (answer: number | string, startedAt?: number, endedAt?: number): Promise<void> => {
     if (!gameSession || !currentPlayer) {
       return;
     }
@@ -132,8 +132,22 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         : gameSession.currentQuestionIndex;
 
       const currentQuestion = gameSession.quiz.questions[currentQuestionIndex];
-      // Handle timeout case: if selectedOption is -1, it's incorrect.
-      const isCorrect = selectedOption !== -1 && selectedOption === currentQuestion.correctAnswer;
+
+      let isCorrect = false;
+      let selectedOption: number | undefined;
+      let textAnswer: string | undefined;
+
+      if (currentQuestion.type === 'text') {
+        // Text answer validation
+        textAnswer = String(answer).trim();
+        const correctAnswer = String(currentQuestion.correctAnswer).trim();
+        isCorrect = textAnswer.toLowerCase() === correctAnswer.toLowerCase();
+      } else {
+        // MCQ validation (default)
+        selectedOption = Number(answer);
+        // Handle timeout case: if answer is -1, it's incorrect.
+        isCorrect = selectedOption !== -1 && selectedOption === Number(currentQuestion.correctAnswer);
+      }
 
       let timeToAnswer = 0;
       if (isSelfPaced && startedAt && endedAt) {
@@ -149,9 +163,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         points = currentQuestion.points; // Use points defined for the question
       }
 
-      const answer: PlayerAnswer = {
+      const playerAnswer: PlayerAnswer = {
         questionId: currentQuestion.id,
-        selectedOption,
+        selectedOption, // Will be undefined for text questions
+        textAnswer, // Will be undefined for MCQ questions
         isCorrect,
         timeToAnswer,
         points,
@@ -163,7 +178,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       const updatedPlayer = {
         ...currentPlayer,
         score: currentPlayer.score + points,
-        answers: [...currentPlayer.answers, answer]
+        answers: [...currentPlayer.answers, playerAnswer]
       };
       setCurrentPlayer(updatedPlayer);
 

@@ -1,22 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="royalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2563EB" /> <stop offset="100%" style="stop-color:#1E3A8A" /> </linearGradient>
+    <linearGradient id="royalBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6" />
+      <stop offset="100%" style="stop-color:#1E3A8A" />
+    </linearGradient>
   </defs>
 
-  <circle cx="256" cy="256" r="240" fill="url(#royalGrad)" />
+  <circle cx="256" cy="256" r="250" fill="url(#royalBlueGrad)" />
 
-  <text x="50%" y="62%"
-        dominant-baseline="middle"
-        text-anchor="middle"
-        font-family="Segoe UI, Helvetica, Arial, sans-serif"
-        font-weight="800"
-        font-size="280"
-        fill="#FFFFFF">Q</text>
+  <g transform="translate(161, 115) scale(0.75)">
+    <path d="M125,0 C65,0 15,50 15,115 C15,160 45,195 65,220 L65,280 L185,280 L185,220 C205,195 235,160 235,115 C235,50 185,0 125,0 Z"
+          fill="#FDE047" />
 
-  <g transform="translate(231, 70)">
-    <circle cx="25" cy="20" r="20" fill="#FDE047" />
-    <rect x="17" y="38" width="16" height="4" rx="2" fill="#FFFFFF" />
-    <rect x="19" y="44" width="12" height="4" rx="2" fill="#FFFFFF" />
+    <path d="M135,55 L85,135 L115,135 L105,215 L155,135 L125,135 Z"
+          fill="#1E3A8A" />
+
+    <rect x="75" y="300" width="100" height="18" rx="4" fill="#FFFFFF" />
+    <rect x="85" y="335" width="80" height="18" rx="4" fill="#FFFFFF" />
+    <rect x="105" y="370" width="40" height="18" rx="9" fill="#FFFFFF" />
   </g>
 </svg>

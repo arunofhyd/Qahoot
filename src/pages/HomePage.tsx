@@ -42,7 +42,7 @@ export const HomePage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Gamepad2 className="text-blue-400" size={48} />
+            <img src="/assets/logo.svg" className="w-16 h-16 rounded-full" alt="Qahoot Logo" />
             <h1 className="text-5xl font-bold text-white">Qahoot</h1>
           </div>
           <p className="text-xl text-white/70">

@@ -296,11 +296,11 @@ export const HostPage: React.FC = () => {
 
     const headers = [
       'Player Name',
-      'Score',
       'Rank',
+      'Total Score',
       ...gameSession.quiz.questions.flatMap((q, i) => [
-        `Q${i + 1} Answer`,
-        `Q${i + 1} Correct`,
+        `Q${i + 1}: ${q.text.replace(/,/g, ' ')} (Answer)`,
+        `Q${i + 1} Result`,
         `Q${i + 1} Points`,
         `Q${i + 1} Time (s)`,
         `Q${i + 1} Start`,
@@ -315,28 +315,37 @@ export const HostPage: React.FC = () => {
 
       const answerData = gameSession.quiz.questions.flatMap(q => {
         const answer = player.answers.find(a => a.questionId === q.id);
-        if (!answer) return ['', '', '', '', '', ''];
+        if (!answer) return ['-', '-', '0', '0', '-', '-'];
+
+        let answerText = '';
+        if (q.type === 'text') {
+            answerText = answer.textAnswer || '';
+        } else {
+            answerText = q.options && answer.selectedOption !== undefined
+                ? q.options[answer.selectedOption]
+                : 'Unknown';
+        }
 
         return [
-          q.options[answer.selectedOption] || 'Unknown',
-          answer.isCorrect ? 'Yes' : 'No',
+          answerText.replace(/"/g, '""'), // Escape quotes
+          answer.isCorrect ? 'Correct' : 'Incorrect',
           answer.points,
           (answer.timeToAnswer / 1000).toFixed(2),
-          answer.startedAt ? new Date(answer.startedAt).toISOString() : '',
-          answer.endedAt ? new Date(answer.endedAt).toISOString() : ''
+          answer.startedAt ? new Date(answer.startedAt).toLocaleString() : '-',
+          answer.endedAt ? new Date(answer.endedAt).toLocaleString() : '-'
         ];
       });
 
       return [
         player.nickname,
-        player.score,
         rank,
+        player.score,
         ...answerData
       ];
     });
 
     const csvContent = [
-      headers.join(','),
+      headers.map(h => `"${h}"`).join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
 

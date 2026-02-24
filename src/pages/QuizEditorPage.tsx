@@ -28,8 +28,10 @@ export const QuizEditorPage: React.FC = () => {
   
   // Question form state
   const [questionText, setQuestionText] = useState('');
+  const [questionType, setQuestionType] = useState<'mcq' | 'text'>('mcq');
   const [options, setOptions] = useState(['', '']); // Default to two options
-  const [correctAnswer, setCorrectAnswer] = useState(0);
+  const [correctAnswer, setCorrectAnswer] = useState<number | string>(0);
+  const [textAnswer, setTextAnswer] = useState('');
   const [timeLimit, setTimeLimit] = useState<number | string>(30);
   const [customTimeLimit, setCustomTimeLimit] = useState('');
   const [points, setPoints] = useState(1000);
@@ -107,8 +109,17 @@ export const QuizEditorPage: React.FC = () => {
     if (question) {
       setEditingQuestion(question);
       setQuestionText(question.text);
-      setOptions([...question.options]);
-      setCorrectAnswer(question.correctAnswer);
+      setQuestionType(question.type || 'mcq');
+      setOptions(question.options ? [...question.options] : ['', '']);
+
+      if (question.type === 'text') {
+        setTextAnswer(question.correctAnswer as string);
+        setCorrectAnswer(0); // Reset MCQ answer
+      } else {
+        setCorrectAnswer(question.correctAnswer);
+        setTextAnswer(''); // Reset text answer
+      }
+
       setPoints(question.points || 1000); // Default to 1000 if points not set
       // setMediaUrl(question.mediaUrl || ''); // Removed
 
@@ -124,8 +135,10 @@ export const QuizEditorPage: React.FC = () => {
     } else {
       setEditingQuestion(null);
       setQuestionText('');
+      setQuestionType('mcq');
       setOptions(['', '']); // Start with two empty options
       setCorrectAnswer(0);
+      setTextAnswer('');
       setTimeLimit(30); // Default for new question
       setCustomTimeLimit('');
       setPoints(1000); // Default for new question
@@ -149,14 +162,21 @@ export const QuizEditorPage: React.FC = () => {
       return;
     }
 
-    if (options.length < 2) {
-      setModalError('A question must have at least two answer options.');
-      return;
-    }
+    if (questionType === 'mcq') {
+      if (options.length < 2) {
+        setModalError('A question must have at least two answer options.');
+        return;
+      }
 
-    if (options.some(opt => !opt.trim())) {
-      setModalError('Answer options cannot be empty.');
-      return;
+      if (options.some(opt => !opt.trim())) {
+        setModalError('Answer options cannot be empty.');
+        return;
+      }
+    } else {
+      if (!textAnswer.trim()) {
+        setModalError('Correct answer cannot be empty.');
+        return;
+      }
     }
 
     let actualTimeLimit: number;
@@ -178,8 +198,9 @@ export const QuizEditorPage: React.FC = () => {
     const questionData: Question = {
       id: editingQuestion?.id || `q_${Date.now()}`,
       text: questionText.trim(),
-      options: options.map(opt => opt.trim()),
-      correctAnswer,
+      type: questionType,
+      options: questionType === 'mcq' ? options.map(opt => opt.trim()) : undefined,
+      correctAnswer: questionType === 'mcq' ? correctAnswer : textAnswer.trim(),
       timeLimit: actualTimeLimit,
       points,
     };
@@ -372,6 +393,20 @@ export const QuizEditorPage: React.FC = () => {
           size="lg"
         >
           <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Question Type
+              </label>
+              <select
+                value={questionType}
+                onChange={(e) => setQuestionType(e.target.value as 'mcq' | 'text')}
+                className="w-full px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              >
+                <option value="mcq">Multiple Choice</option>
+                <option value="text">Fill in the Blanks</option>
+              </select>
+            </div>
+
             <Input
               label="Question Text"
               value={questionText}
@@ -379,70 +414,85 @@ export const QuizEditorPage: React.FC = () => {
               placeholder="Enter your question"
             />
 
-            <div>
-              <label className="block text-sm font-medium text-white mb-4">
-                Answer Options
-              </label>
-              <p className="text-sm text-white/60 mb-3">
-                Add 2-6 answer options and select the correct one by clicking the radio button.
-              </p>
-              <div className="space-y-3">
-                {options.map((option, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="bg-blue-600/20 rounded-lg px-3 py-2 font-bold text-blue-300 min-w-[40px] text-center border border-blue-500/30">
-                      {String.fromCharCode(65 + index)}
-                    </div>
-                    <Input
-                      value={option}
-                      onChange={(e) => {
-                        const newOptions = [...options];
-                        newOptions[index] = e.target.value;
-                        setOptions(newOptions);
-                      }}
-                      placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                      className="flex-1"
-                    />
-                    <input
-                      type="radio"
-                      name="correctAnswer"
-                      checked={correctAnswer === index}
-                      onChange={() => setCorrectAnswer(index)}
-                      className="w-5 h-5 text-blue-600 cursor-pointer accent-blue-600"
-                    />
-                    {options.length > 2 && (
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        onClick={() => {
-                          const newOptions = options.filter((_, i) => i !== index);
-                          // Adjust correctAnswer if the removed option was the correct one or before it
-                          if (correctAnswer === index) {
-                            setCorrectAnswer(0); // Reset to first option
-                          } else if (correctAnswer > index) {
-                            setCorrectAnswer(correctAnswer - 1);
-                          }
+            {questionType === 'mcq' ? (
+              <div>
+                <label className="block text-sm font-medium text-white mb-4">
+                  Answer Options
+                </label>
+                <p className="text-sm text-white/60 mb-3">
+                  Add 2-6 answer options and select the correct one by clicking the radio button.
+                </p>
+                <div className="space-y-3">
+                  {options.map((option, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="bg-blue-600/20 rounded-lg px-3 py-2 font-bold text-blue-300 min-w-[40px] text-center border border-blue-500/30">
+                        {String.fromCharCode(65 + index)}
+                      </div>
+                      <Input
+                        value={option}
+                        onChange={(e) => {
+                          const newOptions = [...options];
+                          newOptions[index] = e.target.value;
                           setOptions(newOptions);
                         }}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                        placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                        className="flex-1"
+                      />
+                      <input
+                        type="radio"
+                        name="correctAnswer"
+                        checked={correctAnswer === index}
+                        onChange={() => setCorrectAnswer(index)}
+                        className="w-5 h-5 text-blue-600 cursor-pointer accent-blue-600"
+                      />
+                      {options.length > 2 && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => {
+                            const newOptions = options.filter((_, i) => i !== index);
+                            // Adjust correctAnswer if the removed option was the correct one or before it
+                            if (correctAnswer === index) {
+                              setCorrectAnswer(0); // Reset to first option
+                            } else if (Number(correctAnswer) > index) {
+                              setCorrectAnswer(Number(correctAnswer) - 1);
+                            }
+                            setOptions(newOptions);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {options.length < 6 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOptions([...options, ''])}
+                    className="mt-3"
+                  >
+                    Add Option
+                  </Button>
+                )}
               </div>
-              {options.length < 6 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setOptions([...options, ''])}
-                  className="mt-3"
-                >
-                  Add Option
-                </Button>
-              )}
-            </div>
+            ) : (
+              <div>
+                <Input
+                  label="Correct Answer"
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
+                  placeholder="Enter the correct answer (case insensitive)"
+                  className="w-full"
+                />
+                <p className="text-xs text-white/50 mt-1">
+                  Players must type this answer exactly (case insensitive).
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">

@@ -1,8 +1,9 @@
 export interface Question {
   id: string;
   text: string;
-  options: string[];
-  correctAnswer: number;
+  type: 'mcq' | 'text';
+  options?: string[]; // Optional for text questions
+  correctAnswer: number | string; // Index for MCQ, string for text
   timeLimit: number; // in seconds
   points: number;
 }
@@ -47,7 +48,8 @@ export interface Player {
 
 export interface PlayerAnswer {
   questionId: string;
-  selectedOption: number;
+  selectedOption?: number; // Index for MCQ
+  textAnswer?: string; // Text answer for text questions
   isCorrect: boolean;
   timeToAnswer: number; // in milliseconds
   startedAt?: number; // Start timestamp

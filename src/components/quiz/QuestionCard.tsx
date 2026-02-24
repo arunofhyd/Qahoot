@@ -31,6 +31,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             <span className="bg-blue-600 text-white px-2 py-1 rounded-lg text-sm font-medium">
               Q{index + 1}
             </span>
+            {question.type === 'text' && (
+              <span className="bg-purple-600/50 text-purple-200 px-2 py-1 rounded-lg text-sm font-medium border border-purple-500/30">
+                Fill-in
+              </span>
+            )}
             <div className="flex items-center gap-1 text-white/60 text-sm">
               <Clock size={14} />
               <span>{question.timeLimit}s</span>
@@ -42,23 +47,30 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           </div>
           <h4 className="text-white font-medium mb-3">{question.text}</h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {question.options.map((option, optionIndex) => (
-              <div
-                key={optionIndex}
-                className={`p-3 rounded-lg border ${
-                  optionIndex === question.correctAnswer
-                    ? 'bg-green-500/20 border-green-500/40 text-green-300'
-                    : 'bg-white/5 border-white/20 text-white/70'
-                }`}
-              >
-                <span className="font-medium mr-2">
-                  {String.fromCharCode(65 + optionIndex)}.
-                </span>
-                {option}
-              </div>
-            ))}
-          </div>
+          {question.type === 'text' ? (
+            <div className="p-3 rounded-lg border bg-green-500/20 border-green-500/40 text-green-300">
+              <span className="font-medium mr-2">Answer:</span>
+              {question.correctAnswer}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {question.options?.map((option, optionIndex) => (
+                <div
+                  key={optionIndex}
+                  className={`p-3 rounded-lg border ${
+                    optionIndex === question.correctAnswer
+                      ? 'bg-green-500/20 border-green-500/40 text-green-300'
+                      : 'bg-white/5 border-white/20 text-white/70'
+                  }`}
+                >
+                  <span className="font-medium mr-2">
+                    {String.fromCharCode(65 + optionIndex)}.
+                  </span>
+                  {option}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="flex gap-2 ml-4">
