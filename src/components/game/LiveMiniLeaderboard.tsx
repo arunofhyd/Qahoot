@@ -5,19 +5,16 @@ import { Trophy } from 'lucide-react';
 
 interface LiveMiniLeaderboardProps {
   players: Player[];
+  enablePoints?: boolean;
 }
 
-export const LiveMiniLeaderboard: React.FC<LiveMiniLeaderboardProps> = ({ players }) => {
+export const LiveMiniLeaderboard: React.FC<LiveMiniLeaderboardProps> = ({ players, enablePoints = true }) => {
   const sortedPlayers = React.useMemo(() =>
     [...players]
       .sort((a, b) => b.score - a.score)
       .slice(0, 5),
     [players]
   );
-
-  // It's better to show the component with a message rather than returning null or a different structure
-  // if the parent component expects a consistent element type.
-  // So, the "No scores to display yet" will be inside the main Card.
 
   return (
     <Card className="mt-6 p-4">
@@ -47,9 +44,11 @@ export const LiveMiniLeaderboard: React.FC<LiveMiniLeaderboardProps> = ({ player
                 </span>
                 <span className="text-white font-semibold truncate">{player.nickname}</span>
               </div>
-              <span className="text-blue-400 font-bold whitespace-nowrap text-sm">
-                {player.score.toLocaleString()} pts
-              </span>
+              {enablePoints && (
+                <span className="text-blue-400 font-bold whitespace-nowrap text-sm">
+                  {player.score.toLocaleString()} pts
+                </span>
+              )}
             </li>
           ))}
         </ol>

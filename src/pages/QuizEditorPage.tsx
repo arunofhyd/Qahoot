@@ -320,7 +320,7 @@ export const QuizEditorPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center pt-6">
+              <div className="flex flex-col gap-4 pt-4">
                 <label className="flex items-center gap-3 cursor-pointer text-white">
                   <input
                     type="checkbox"
@@ -330,15 +330,39 @@ export const QuizEditorPage: React.FC = () => {
                       settings: {
                         ...quiz.settings,
                         mode: quiz.settings?.mode || 'live',
-                        enableTiming: e.target.checked
+                        enableTiming: e.target.checked,
+                        enablePoints: quiz.settings?.enablePoints ?? true
                       }
                     })}
                     className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
-                    <span className="font-medium">Record Question Timing</span>
+                    <span className="font-medium">Enable Timer (Optional)</span>
                     <p className="text-xs text-white/50">
-                      Track how long players take to answer each question
+                      Show countdown timer and track answer speed
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer text-white">
+                  <input
+                    type="checkbox"
+                    checked={quiz.settings?.enablePoints ?? true}
+                    onChange={(e) => setQuiz({
+                      ...quiz,
+                      settings: {
+                        ...quiz.settings,
+                        mode: quiz.settings?.mode || 'live',
+                        enableTiming: quiz.settings?.enableTiming || false,
+                        enablePoints: e.target.checked
+                      }
+                    })}
+                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="font-medium">Enable Points System (Optional)</span>
+                    <p className="text-xs text-white/50">
+                      Award points for correct answers based on speed and accuracy
                     </p>
                   </div>
                 </label>

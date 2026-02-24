@@ -7,12 +7,14 @@ interface LeaderboardProps {
   entries: LeaderboardEntry[];
   title?: string;
   showLastQuestionPoints?: boolean;
+  enablePoints?: boolean;
 }
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({
   entries,
   title = 'Leaderboard',
-  showLastQuestionPoints = false
+  showLastQuestionPoints = false,
+  enablePoints = true
 }) => {
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -59,7 +61,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                   <div className="text-white font-semibold text-lg">
                     {entry.nickname}
                   </div>
-                  {showLastQuestionPoints && entry.lastQuestionPoints !== undefined && (
+                  {enablePoints && showLastQuestionPoints && entry.lastQuestionPoints !== undefined && (
                     <div className="text-sm text-white/70">
                       Last question: +{entry.lastQuestionPoints} pts
                     </div>
@@ -67,12 +69,14 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                 </div>
               </div>
               
-              <div className="text-right">
-                <div className="text-2xl font-bold text-white">
-                  {entry.score.toLocaleString()}
+              {enablePoints && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white">
+                    {entry.score.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-white/60">points</div>
                 </div>
-                <div className="text-sm text-white/60">points</div>
-              </div>
+              )}
             </div>
           ))}
         </div>

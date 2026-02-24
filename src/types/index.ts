@@ -16,6 +16,7 @@ export interface Quiz {
   settings?: {
     mode: 'live' | 'self-paced';
     enableTiming: boolean;
+    enablePoints?: boolean;
   };
   createdBy: string;
   createdAt: Date;
@@ -30,6 +31,7 @@ export interface GameSession {
   hostId: string;
   mode?: 'live' | 'self-paced'; // Add mode
   enableTiming?: boolean; // Add enableTiming
+  enablePoints?: boolean; // Add enablePoints
   status: 'waiting' | 'active' | 'question' | 'answer_reveal' | 'results' | 'leaderboard' | 'finished';
   currentQuestionIndex: number;
   questionStartTime?: number;

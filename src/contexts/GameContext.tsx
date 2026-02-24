@@ -187,19 +187,33 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         let points = 0;
         if (isCorrect) {
-            points = currentQuestion.points;
+            // Check if points are enabled
+            const enablePoints = sessionData.enablePoints ?? sessionData.quiz?.settings?.enablePoints ?? true;
+            if (enablePoints) {
+                points = currentQuestion.points;
+            }
         }
 
-        const playerAnswer: PlayerAnswer = {
+        // Create the answer object carefully to avoid undefined values which Firestore rejects
+        const playerAnswer: any = {
             questionId: currentQuestion.id,
-            selectedOption,
-            textAnswer,
             isCorrect,
             timeToAnswer,
-            points,
-            startedAt,
-            endedAt
+            points
         };
+
+        if (selectedOption !== undefined) {
+            playerAnswer.selectedOption = selectedOption;
+        }
+        if (textAnswer !== undefined) {
+            playerAnswer.textAnswer = textAnswer;
+        }
+        if (startedAt !== undefined) {
+            playerAnswer.startedAt = startedAt;
+        }
+        if (endedAt !== undefined) {
+            playerAnswer.endedAt = endedAt;
+        }
 
         const updatedPlayer = {
             ...playerFromDb,

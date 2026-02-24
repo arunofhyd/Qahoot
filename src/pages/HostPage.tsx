@@ -187,6 +187,7 @@ export const HostPage: React.FC = () => {
         status: mode === 'self-paced' ? 'active' : 'waiting',
         mode,
         enableTiming: quiz.settings?.enableTiming || false,
+        enablePoints: quiz.settings?.enablePoints ?? true,
         currentQuestionIndex: 0,
         players: [],
         createdAt: new Date()
@@ -536,7 +537,7 @@ export const HostPage: React.FC = () => {
               </div>
             </Card>
             {gameSession.status === 'answer_reveal' && gameSession.players && gameSession.players.length > 0 && (
-              <LiveMiniLeaderboard players={gameSession.players} />
+              <LiveMiniLeaderboard players={gameSession.players} enablePoints={gameSession.enablePoints} />
             )}
           </div>
         ) : gameSession.status === 'leaderboard' ? (
@@ -545,6 +546,7 @@ export const HostPage: React.FC = () => {
               entries={generateLeaderboard()}
               title={`Question ${gameSession.currentQuestionIndex + 1} Results`}
               showLastQuestionPoints={true}
+              enablePoints={gameSession.enablePoints}
             />
             <Card>
               <div className="flex flex-wrap justify-center gap-4">
@@ -568,6 +570,7 @@ export const HostPage: React.FC = () => {
             <Leaderboard
               entries={generateLeaderboard()}
               title="Final Results 🏆"
+              enablePoints={gameSession.enablePoints}
             />
             
             <Card className="text-center">
