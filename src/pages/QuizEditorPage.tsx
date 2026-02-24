@@ -254,9 +254,9 @@ export const QuizEditorPage: React.FC = () => {
 
   return (
     <Layout background="host">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-full overflow-hidden">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/dashboard')}
@@ -271,7 +271,7 @@ export const QuizEditorPage: React.FC = () => {
         </div>
 
         {/* Quiz Details */}
-        <Card className="mb-8">
+        <Card className="mb-8 w-full">
           <h2 className="text-2xl font-bold text-white mb-6">Quiz Details</h2>
           
           <div className="space-y-4">
@@ -321,7 +321,7 @@ export const QuizEditorPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-4 pt-4">
-                <label className="flex items-center gap-3 cursor-pointer text-white">
+                <label className="flex items-start md:items-center gap-3 cursor-pointer text-white">
                   <input
                     type="checkbox"
                     checked={quiz.settings?.enableTiming || false}
@@ -335,7 +335,7 @@ export const QuizEditorPage: React.FC = () => {
                         recordTimestamp: quiz.settings?.recordTimestamp || false
                       }
                     })}
-                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
+                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500 mt-1 md:mt-0"
                   />
                   <div>
                     <span className="font-medium">Enable Timer (Optional)</span>
@@ -345,7 +345,7 @@ export const QuizEditorPage: React.FC = () => {
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 cursor-pointer text-white">
+                <label className="flex items-start md:items-center gap-3 cursor-pointer text-white">
                   <input
                     type="checkbox"
                     checked={quiz.settings?.enablePoints ?? true}
@@ -359,7 +359,7 @@ export const QuizEditorPage: React.FC = () => {
                         recordTimestamp: quiz.settings?.recordTimestamp || false
                       }
                     })}
-                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
+                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500 mt-1 md:mt-0"
                   />
                   <div>
                     <span className="font-medium">Enable Points System (Optional)</span>
@@ -369,7 +369,7 @@ export const QuizEditorPage: React.FC = () => {
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 cursor-pointer text-white">
+                <label className="flex items-start md:items-center gap-3 cursor-pointer text-white">
                   <input
                     type="checkbox"
                     checked={quiz.settings?.recordTimestamp || false}
@@ -383,7 +383,7 @@ export const QuizEditorPage: React.FC = () => {
                         recordTimestamp: e.target.checked
                       }
                     })}
-                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
+                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500 mt-1 md:mt-0"
                   />
                   <div>
                     <span className="font-medium">Record Question Timestamp (Optional)</span>
@@ -398,7 +398,7 @@ export const QuizEditorPage: React.FC = () => {
         </Card>
 
         {/* Questions Section */}
-        <Card>
+        <Card className="w-full">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">
               Questions ({quiz.questions.length})
@@ -473,7 +473,7 @@ export const QuizEditorPage: React.FC = () => {
                 </p>
                 <div className="space-y-3">
                   {options.map((option, index) => (
-                    <div key={index} className="flex items-center gap-3">
+                    <div key={index} className="flex flex-wrap items-center gap-3">
                       <div className="bg-blue-600/20 rounded-lg px-3 py-2 font-bold text-blue-300 min-w-[40px] text-center border border-blue-500/30">
                         {String.fromCharCode(65 + index)}
                       </div>
@@ -485,34 +485,36 @@ export const QuizEditorPage: React.FC = () => {
                           setOptions(newOptions);
                         }}
                         placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                        className="flex-1"
+                        className="flex-1 min-w-[150px]"
                       />
-                      <input
-                        type="radio"
-                        name="correctAnswer"
-                        checked={correctAnswer === index}
-                        onChange={() => setCorrectAnswer(index)}
-                        className="w-5 h-5 text-blue-600 cursor-pointer accent-blue-600"
-                      />
-                      {options.length > 2 && (
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          onClick={() => {
-                            const newOptions = options.filter((_, i) => i !== index);
-                            // Adjust correctAnswer if the removed option was the correct one or before it
-                            if (correctAnswer === index) {
-                              setCorrectAnswer(0); // Reset to first option
-                            } else if (Number(correctAnswer) > index) {
-                              setCorrectAnswer(Number(correctAnswer) - 1);
-                            }
-                            setOptions(newOptions);
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="correctAnswer"
+                            checked={correctAnswer === index}
+                            onChange={() => setCorrectAnswer(index)}
+                            className="w-5 h-5 text-blue-600 cursor-pointer accent-blue-600"
+                          />
+                          {options.length > 2 && (
+                            <Button
+                              type="button"
+                              variant="danger"
+                              size="sm"
+                              onClick={() => {
+                                const newOptions = options.filter((_, i) => i !== index);
+                                // Adjust correctAnswer if the removed option was the correct one or before it
+                                if (correctAnswer === index) {
+                                  setCorrectAnswer(0); // Reset to first option
+                                } else if (Number(correctAnswer) > index) {
+                                  setCorrectAnswer(Number(correctAnswer) - 1);
+                                }
+                                setOptions(newOptions);
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                      </div>
                     </div>
                   ))}
                 </div>
