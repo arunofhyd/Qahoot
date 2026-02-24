@@ -188,6 +188,7 @@ export const HostPage: React.FC = () => {
         mode,
         enableTiming: quiz.settings?.enableTiming || false,
         enablePoints: quiz.settings?.enablePoints ?? true,
+        recordTimestamp: quiz.settings?.recordTimestamp || false,
         currentQuestionIndex: 0,
         players: [],
         createdAt: new Date()
@@ -295,18 +296,24 @@ export const HostPage: React.FC = () => {
   const exportResults = () => {
     if (!gameSession) return;
 
+    const recordTimestamp = gameSession.recordTimestamp ?? gameSession.quiz.settings?.recordTimestamp ?? false;
+
     const headers = [
       'Player Name',
       'Rank',
       'Total Score',
-      ...gameSession.quiz.questions.flatMap((q, i) => [
-        `Q${i + 1}: ${q.text.replace(/,/g, ' ')} (Answer)`,
-        `Q${i + 1} Result`,
-        `Q${i + 1} Points`,
-        `Q${i + 1} Time (s)`,
-        `Q${i + 1} Start`,
-        `Q${i + 1} End`
-      ])
+      ...gameSession.quiz.questions.flatMap((q, i) => {
+          const cols = [
+            `Q${i + 1}: ${q.text.replace(/,/g, ' ')} (Answer)`,
+            `Q${i + 1} Result`,
+            `Q${i + 1} Points`,
+            `Q${i + 1} Time (s)`
+          ];
+          if (recordTimestamp) {
+              cols.push(`Q${i + 1} Start`, `Q${i + 1} End`);
+          }
+          return cols;
+      })
     ];
 
     const leaderboard = generateLeaderboard();
@@ -316,7 +323,14 @@ export const HostPage: React.FC = () => {
 
       const answerData = gameSession.quiz.questions.flatMap(q => {
         const answer = player.answers.find(a => a.questionId === q.id);
-        if (!answer) return ['-', '-', '0', '0', '-', '-'];
+
+        if (!answer) {
+             const cols = ['-', '-', '0', '0'];
+             if (recordTimestamp) {
+                 cols.push('-', '-');
+             }
+             return cols;
+        }
 
         let answerText = '';
         if (q.type === 'text') {
@@ -327,14 +341,21 @@ export const HostPage: React.FC = () => {
                 : 'Unknown';
         }
 
-        return [
+        const cols = [
           answerText.replace(/"/g, '""'), // Escape quotes
           answer.isCorrect ? 'Correct' : 'Incorrect',
           answer.points,
-          (answer.timeToAnswer / 1000).toFixed(2),
-          answer.startedAt ? new Date(answer.startedAt).toLocaleString() : '-',
-          answer.endedAt ? new Date(answer.endedAt).toLocaleString() : '-'
+          (answer.timeToAnswer / 1000).toFixed(2)
         ];
+
+        if (recordTimestamp) {
+            cols.push(
+                answer.startedAt ? new Date(answer.startedAt).toLocaleString() : '-',
+                answer.endedAt ? new Date(answer.endedAt).toLocaleString() : '-'
+            );
+        }
+
+        return cols;
       });
 
       return [

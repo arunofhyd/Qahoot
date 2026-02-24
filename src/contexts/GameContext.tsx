@@ -208,11 +208,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         if (textAnswer !== undefined) {
             playerAnswer.textAnswer = textAnswer;
         }
-        if (startedAt !== undefined) {
-            playerAnswer.startedAt = startedAt;
-        }
-        if (endedAt !== undefined) {
-            playerAnswer.endedAt = endedAt;
+
+        // Only include timestamps if recordTimestamp is enabled
+        const recordTimestamp = sessionData.recordTimestamp ?? sessionData.quiz?.settings?.recordTimestamp ?? false;
+        if (recordTimestamp) {
+             if (startedAt !== undefined) {
+                playerAnswer.startedAt = startedAt;
+            }
+            if (endedAt !== undefined) {
+                playerAnswer.endedAt = endedAt;
+            }
         }
 
         const updatedPlayer = {

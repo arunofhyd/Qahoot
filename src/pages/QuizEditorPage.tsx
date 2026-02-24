@@ -331,7 +331,8 @@ export const QuizEditorPage: React.FC = () => {
                         ...quiz.settings,
                         mode: quiz.settings?.mode || 'live',
                         enableTiming: e.target.checked,
-                        enablePoints: quiz.settings?.enablePoints ?? true
+                        enablePoints: quiz.settings?.enablePoints ?? true,
+                        recordTimestamp: quiz.settings?.recordTimestamp || false
                       }
                     })}
                     className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
@@ -354,7 +355,8 @@ export const QuizEditorPage: React.FC = () => {
                         ...quiz.settings,
                         mode: quiz.settings?.mode || 'live',
                         enableTiming: quiz.settings?.enableTiming || false,
-                        enablePoints: e.target.checked
+                        enablePoints: e.target.checked,
+                        recordTimestamp: quiz.settings?.recordTimestamp || false
                       }
                     })}
                     className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
@@ -363,6 +365,30 @@ export const QuizEditorPage: React.FC = () => {
                     <span className="font-medium">Enable Points System (Optional)</span>
                     <p className="text-xs text-white/50">
                       Award points for correct answers based on speed and accuracy
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer text-white">
+                  <input
+                    type="checkbox"
+                    checked={quiz.settings?.recordTimestamp || false}
+                    onChange={(e) => setQuiz({
+                      ...quiz,
+                      settings: {
+                        ...quiz.settings,
+                        mode: quiz.settings?.mode || 'live',
+                        enableTiming: quiz.settings?.enableTiming || false,
+                        enablePoints: quiz.settings?.enablePoints ?? true,
+                        recordTimestamp: e.target.checked
+                      }
+                    })}
+                    className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="font-medium">Record Question Timestamp (Optional)</span>
+                    <p className="text-xs text-white/50">
+                      Record the exact date and time when each question was answered
                     </p>
                   </div>
                 </label>
@@ -517,40 +543,43 @@ export const QuizEditorPage: React.FC = () => {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Time Limit (seconds)
-              </label>
-              <select
-                value={timeLimit}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setTimeLimit(value === "other" ? "other" : Number(value));
-                  if (value !== "other") {
-                    setCustomTimeLimit(''); // Reset custom time if a predefined is selected
-                  }
-                }}
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              >
-                <option value={10}>10 seconds</option>
-                <option value={15}>15 seconds</option>
-                <option value={20}>20 seconds</option>
-                <option value={30}>30 seconds</option>
-                <option value={45}>45 seconds</option>
-                <option value={60}>60 seconds</option>
-                <option value="other">Other (Custom)</option>
-              </select>
-              {timeLimit === 'other' && (
-                <Input
-                  type="number"
-                  value={customTimeLimit}
-                  onChange={(e) => setCustomTimeLimit(e.target.value)}
-                  placeholder="Enter custom time limit (seconds)"
-                  className="mt-2"
-                  min="1"
-                />
-              )}
-            </div>
+            {/* Conditional Rendering for Time Limit */}
+            {(quiz?.settings?.enableTiming) && (
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Time Limit (seconds)
+                </label>
+                <select
+                  value={timeLimit}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setTimeLimit(value === "other" ? "other" : Number(value));
+                    if (value !== "other") {
+                      setCustomTimeLimit(''); // Reset custom time if a predefined is selected
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value={10}>10 seconds</option>
+                  <option value={15}>15 seconds</option>
+                  <option value={20}>20 seconds</option>
+                  <option value={30}>30 seconds</option>
+                  <option value={45}>45 seconds</option>
+                  <option value={60}>60 seconds</option>
+                  <option value="other">Other (Custom)</option>
+                </select>
+                {timeLimit === 'other' && (
+                  <Input
+                    type="number"
+                    value={customTimeLimit}
+                    onChange={(e) => setCustomTimeLimit(e.target.value)}
+                    placeholder="Enter custom time limit (seconds)"
+                    className="mt-2"
+                    min="1"
+                  />
+                )}
+              </div>
+            )}
 
             {/* Media URL Input Removed */}
 
@@ -560,18 +589,21 @@ export const QuizEditorPage: React.FC = () => {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Points
-              </label>
-              <Input
-                type="number"
-                value={points}
-                onChange={(e) => setPoints(Number(e.target.value))}
-                placeholder="Enter points for the question"
-                className="w-full"
-              />
-            </div>
+            {/* Conditional Rendering for Points */}
+            {(quiz?.settings?.enablePoints ?? true) && (
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Points
+                </label>
+                <Input
+                  type="number"
+                  value={points}
+                  onChange={(e) => setPoints(Number(e.target.value))}
+                  placeholder="Enter points for the question"
+                  className="w-full"
+                />
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="ghost" onClick={closeQuestionModal}>

@@ -15,8 +15,9 @@ export interface Quiz {
   questions: Question[];
   settings?: {
     mode: 'live' | 'self-paced';
-    enableTiming: boolean;
-    enablePoints?: boolean;
+    enableTiming: boolean; // Enable timer UI
+    enablePoints?: boolean; // Enable points system
+    recordTimestamp?: boolean; // Enable start/end timestamp recording
   };
   createdBy: string;
   createdAt: Date;
@@ -32,6 +33,7 @@ export interface GameSession {
   mode?: 'live' | 'self-paced'; // Add mode
   enableTiming?: boolean; // Add enableTiming
   enablePoints?: boolean; // Add enablePoints
+  recordTimestamp?: boolean; // Add recordTimestamp
   status: 'waiting' | 'active' | 'question' | 'answer_reveal' | 'results' | 'leaderboard' | 'finished';
   currentQuestionIndex: number;
   questionStartTime?: number;
